@@ -99,6 +99,7 @@ void loop() {
   };
   
   static Mode mode = TELETYPE;
+  static int activeChannel = 0;
 
   uint8_t pressed = changedButtons();
 
@@ -112,6 +113,7 @@ void loop() {
       case LOGGER:
         mode = TELETYPE;
         initTeletype();
+        activeChannel = 0;
         Serial.println("Modo: Teletype");      
         break;        
     }
@@ -120,7 +122,9 @@ void loop() {
   if (pressed == YELLOW_BUTTON) {
     switch(mode) {
       case TELETYPE:
+        activeChannel = (activeChannel + 1) % 10;
         clear();
+        printF("Channel %d\n", activeChannel);
         break;
       case LOGGER:
         initLogger();   
@@ -144,6 +148,9 @@ void loop() {
   lastCheckMillis = millis(); 
   
   buffer[Udp.read(buffer, UDP_TX_PACKET_MAX_SIZE)] = 0;
+
+  // Canal al que van los comandos, si no se especifica es 0
+  int channel = 0;
 
   // Leemos los comandos linea a linea
   char *lasts;
@@ -171,14 +178,26 @@ void loop() {
       Serial.printf("Rcv (%s): palette +%d bytes\n", Udp.remoteIP().toString().c_str(), strlen(line) - 8);  
     } else {
       Serial.printf("Rcv (%s): %s\n", Udp.remoteIP().toString().c_str(), line);  
-    }  
+    }          
+
+    // Seleccionar el canal al que van dirigidos los comandos
+    int i;
+    if (sscanf(line, " channel %d", &i) == 1 && i >= 0 && i < 10) {
+      channel = i;
+    }
+
+    // Si este comando va dirigido a un canal distinto del canal activo lo ignoramos
+    if (activeChannel != channel) {
+      line = strtok_r(NULL, "\n\r", &lasts);
+      continue;
+    } 
 
     char *command = strtok(line, " ");
     if (!command) {
       line = strtok_r(NULL, "\n\r", &lasts);
       continue;
-    }     
-
+    } 
+    
     if (strcmp(command, "clear") == 0) clear(); 
     else {
       // El resto de comandos tienen parametros
@@ -187,7 +206,7 @@ void loop() {
         line = strtok_r(NULL, "\n\r", &lasts);
         continue;
       }
-
+      
       // Texto
       if (strcmp(command, "print") == 0) print(params);
       else if (strcmp(command, "println") == 0) println(params);    
@@ -216,7 +235,7 @@ void loop() {
     line = strtok_r(NULL, "\n\r", &lasts);
   }
 
-  if (mode != LOGGER) sendACK();
+  sendACK();
 }
 
 void sendACK() {
