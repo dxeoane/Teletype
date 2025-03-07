@@ -8,6 +8,8 @@
 #include "secret.h"
 
 #define PORT 8888
+#define CHANNELS 3
+
 unsigned long lastCheckMillis = 0;
 char ACK[] = "ACK\r\n";  
 
@@ -122,7 +124,7 @@ void loop() {
   if (pressed == YELLOW_BUTTON) {
     switch(mode) {
       case TELETYPE:
-        activeChannel = (activeChannel + 1) % 10;
+        activeChannel = (activeChannel + 1) % CHANNELS;
         clear();
         printF("Channel %d\n", activeChannel);
         break;
@@ -182,7 +184,7 @@ void loop() {
 
     // Seleccionar el canal al que van dirigidos los comandos
     int i;
-    if (sscanf(line, " channel %d", &i) == 1 && i >= 0 && i < 10) {
+    if (sscanf(line, " channel %d", &i) == 1 && i >= 0 && i < CHANNELS) {
       channel = i;
     }
 
