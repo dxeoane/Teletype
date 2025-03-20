@@ -152,7 +152,7 @@ void loop() {
   buffer[Udp.read(buffer, UDP_TX_PACKET_MAX_SIZE)] = 0;
 
   // Canal al que van los comandos, si no se especifica es 0
-  int channel = 0;
+  int commandChannel = 0;
 
   // Leemos los comandos linea a linea
   char *lasts;
@@ -182,14 +182,20 @@ void loop() {
       Serial.printf("Rcv (%s): %s\n", Udp.remoteIP().toString().c_str(), line);  
     }          
 
-    // Seleccionar el canal al que van dirigidos los comandos
+    // Selecciona el canal al que van dirigidos los comandos de este paquete
     int i;
     if (sscanf(line, " channel %d", &i) == 1 && i >= 0 && i < CHANNELS) {
-      channel = i;
+      commandChannel = i;
+    }
+
+    // Selecciona el canal al que van dirigidos los comandos de este paquete y ademas cambia el canal activo   
+    if (sscanf(line, " alert %d", &i) == 1 && i >= 0 && i < CHANNELS) {
+      commandChannel = i;
+      activeChannel = i;
     }
 
     // Si este comando va dirigido a un canal distinto del canal activo lo ignoramos
-    if (activeChannel != channel) {
+    if (activeChannel != commandChannel) {
       line = strtok_r(NULL, "\n\r", &lasts);
       continue;
     } 

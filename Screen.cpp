@@ -24,6 +24,7 @@ Adafruit_ST7789 screen = Adafruit_ST7789(SCREEN_CS, SCREEN_DC, SCREEN_RST);
 
 void setupScreen() {
   screen.init(SCREEN_HEIGHT, SCREEN_WIDTH, SPI_MODE0);  
+  screen.setSPISpeed(40000000);  
   screen.setRotation(3);      
   screen.fillScreen(bgColor);
   screen.setTextColor(fgColor, bgColor);
