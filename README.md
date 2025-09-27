@@ -17,6 +17,8 @@ Los comandos van uno por línea, pueden ir varios en el mismo paquete UDP o cada
 La lista de comandos es:
 
 - `clear`
+- `channel`
+- `alert`
 - `print`
 - `println`
 - `cursor`
