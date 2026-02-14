@@ -1,12 +1,8 @@
 #include <Arduino.h>
+#include <TFT_eSPI.h>
 #include <SPI.h>
-#include <Adafruit_GFX.h> 
-#include <Adafruit_ST7789.h>
 #include "Screen.h"
 
-#define SCREEN_DC     D1 
-#define SCREEN_RST    D2
-#define SCREEN_CS     D8
 // Usamos los caracteres desde el 33 hasta el 255, 223 posibles colores
 #define PALETTE_SIZE  223 
 
@@ -20,13 +16,14 @@ uint16_t palette[PALETTE_SIZE];
 uint16_t drawX = 0;
 uint16_t drawY = 0;
 
-Adafruit_ST7789 screen = Adafruit_ST7789(SCREEN_CS, SCREEN_DC, SCREEN_RST);
+TFT_eSPI screen = TFT_eSPI(); 
 
 void setupScreen() {
-  screen.init(SCREEN_HEIGHT, SCREEN_WIDTH, SPI_MODE0);  
-  screen.setSPISpeed(40000000);  
-  screen.setRotation(3);      
+  screen.init();
+  screen.setRotation(1);
   screen.fillScreen(bgColor);
+  // x, y, Font
+  screen.setCursor(0, 0, 1);
   screen.setTextColor(fgColor, bgColor);
   screen.setTextWrap(false);
   loadPalette(NULL);
@@ -339,7 +336,7 @@ void drawScanline(const char *s) {
             break;
           }
           // Escribimos el pixel, usando el color de la paleta. 
-          screen.writePixel(x,drawY,palette[c-33]);
+          screen.drawPixel(x,drawY,palette[c-33]);
           x++;
         }        
       }
