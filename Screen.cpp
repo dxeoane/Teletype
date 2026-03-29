@@ -20,7 +20,7 @@ TFT_eSPI screen = TFT_eSPI();
 
 void setupScreen() {
   screen.init();
-  screen.setRotation(1);
+  screen.setRotation(1);  
   screen.fillScreen(bgColor);
   // x, y, Font
   screen.setCursor(0, 0, 1);

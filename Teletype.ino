@@ -1,4 +1,9 @@
-#include <ESP8266WiFi.h>
+#ifdef ESP8266
+  #include <ESP8266WiFi.h>
+#else
+  #include <WiFi.h>
+#endif  
+
 #include <WiFiUdp.h>
 #include <PubSubClient.h>
 
@@ -11,6 +16,10 @@
 
 #define PORT 8888
 #define CHANNELS 3
+
+#ifdef ESP32
+  #define UDP_TX_PACKET_MAX_SIZE 8192
+#endif  
 
 #define MQTT_ENABLED
 #define MQTT_MAX_BUFFER_SIZE 4096
@@ -49,13 +58,14 @@ void setup() {
   Serial.println("\n\n=== Teletype ===\n");
   
   setTextSize(2);  
-  println("");
-
-  printF("MAC: %s\n", WiFi.macAddress().c_str());
-  Serial.printf("MAC: %s\n", WiFi.macAddress().c_str()); 
+  println("");  
   
   WiFi.mode(WIFI_STA);
   WiFi.begin(STASSID, STAPSK);  
+
+  printF("MAC: %s\n", WiFi.macAddress().c_str());
+  Serial.printf("MAC: %s\n", WiFi.macAddress().c_str()); 
+
   int retries = 0;
   while (WiFi.status() != WL_CONNECTED && retries < 100) {
     printF("Conectando ..%c", spinner[retries % (sizeof(spinner)-1)]);
@@ -185,7 +195,11 @@ void loop() {
 
 void sendACK() {
   Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+#ifdef ESP8266
   Udp.write(ACK);
+#else
+  Udp.print(ACK);
+#endif
   Udp.endPacket();
 }
 
@@ -305,7 +319,11 @@ void checkWiFi() {
   }
   
   Serial.println("No hay conexion WiFi!");
+#ifdef ESP8266
   Udp.stopAll();
+#else
+  Udp.stop();
+#endif    
   WiFi.disconnect();  
 
   Serial.print("Conectando ...");
