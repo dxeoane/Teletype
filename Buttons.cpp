@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "config.h"
 
 #include <Arduino.h>
@@ -37,6 +38,9 @@
     SPIClass touchscreenSPI = SPIClass(VSPI);
     XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 
+    Rect blueButtonRect = BLUE_BUTTON_RECT;
+    Rect yellowButtonRect = YELLOW_BUTTON_RECT;
+
     void setupButtons(){
         touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
         touchscreen.begin(touchscreenSPI);
@@ -50,14 +54,17 @@
         uint8_t buttons = 0;
         if (touchscreen.tirqTouched() && touchscreen.touched()) {
             TS_Point p = touchscreen.getPoint();
-            x = map(p.x, 200, 3700, 1, SCREEN_WIDTH);
-            // y = map(p.y, 240, 3800, 1, SCREEN_HEIGHT);
+            x = map(p.x, TOUCHSCREEN_X_MIN, TOUCHSCREEN_X_MAX, 1, SCREEN_WIDTH);
+            y = map(p.y, TOUCHSCREEN_Y_MIN, TOUCHSCREEN_Y_MAX, 1, SCREEN_HEIGHT);
             z = p.z;
-            if (z > 1000) {
-                if (x < SCREEN_WIDTH / 2) {
+            #ifdef SERIAL_DEBUG_ENABLED
+                Serial.printf("Touch: X=%d(%d), Y=%d(%d), Z=%d\n", x,p.x,y,p.y,z);
+            #endif
+            if (z > TOUCHSCREEN_Z_THRESHOLD) {
+                if (containsPoint(&blueButtonRect, x, y)) {
                   buttons |= BLUE_BUTTON;  
                 }
-                if (x > SCREEN_WIDTH / 2) {
+                if (containsPoint(&yellowButtonRect, x, y)) {
                   buttons |= YELLOW_BUTTON;  
                 }
             }

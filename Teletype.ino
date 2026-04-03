@@ -269,6 +269,8 @@ void parseBuffer(char buffer[]) {
     } 
     
     if (strcmp(command, "clear") == 0) clear(); 
+    else if (strcmp(command, "anchor") == 0) setAnchor(); 
+    else if (strcmp(command, "feed") == 0) lineFeed(); 
     else {
       // El resto de comandos tienen parametros
       char *params = strtok(NULL, "\n\r");
@@ -279,8 +281,11 @@ void parseBuffer(char buffer[]) {
       
       // Texto
       if (strcmp(command, "print") == 0) print(params);
-      else if (strcmp(command, "println") == 0) println(params);    
+      else if (strcmp(command, "println") == 0) println(params);      
       else if (strcmp(command, "cursor") == 0) setTextCursor(params);      
+      else if (strcmp(command, "moveto") == 0) moveTo(params);        
+      else if (strcmp(command, "move") == 0) move(params);  
+      else if (strcmp(command, "relto") == 0) relTo(params);   
       else if (strcmp(command, "size") == 0) setTextSize(params);
       // Comunes
       else if (strcmp(command, "bgcolor") == 0) setBgColor(params);

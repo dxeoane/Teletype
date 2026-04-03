@@ -11,6 +11,15 @@
 #define COLOR_YELLOW 0xFFE0
 #define COLOR_ORANGE 0xFC00
 
+typedef struct {
+    uint16_t x;
+    uint16_t y;
+    uint16_t width;
+    uint16_t height;
+} Rect;
+
+bool containsPoint(const Rect* r, uint16_t px, uint16_t py);
+
 void setupScreen();
 
 void clear();
@@ -22,8 +31,16 @@ void setBgColor(uint16_t color);
 void setFgColor(const char *params);
 void setFgColor(uint16_t color);
 void setBWColors();
+void setAnchor();
+void lineFeed();
 void setTextCursor(const char *params);
 void setTextCursor(uint16_t x, uint16_t y);
+void moveTo(const char *params);
+void moveTo(uint16_t x, uint16_t y);
+void move(const char *params);
+void move(uint16_t dx, uint16_t dy);
+void relTo(const char *params);
+void relTo(uint16_t dx, uint16_t dy);
 uint16_t getTextCursorX();
 uint16_t getTextCursorY();
 uint16_t getCursorX();

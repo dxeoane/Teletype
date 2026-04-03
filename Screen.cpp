@@ -12,6 +12,8 @@
 uint16_t fgColor = COLOR_WHITE;
 uint16_t bgColor = COLOR_BLACK;
 uint8_t textSize = 2;
+uint16_t anchorX = 0;
+uint16_t anchorY = 0;
 // Graficos
 uint8_t scale  = 1;
 uint16_t palette[PALETTE_SIZE];
@@ -92,6 +94,15 @@ void setBWColors() {
   screen.setTextColor(fgColor, bgColor);
 }
 
+void setAnchor(){
+  anchorX = screen.getCursorX();
+  anchorY = screen.getCursorY();
+}
+
+void lineFeed() {
+  moveTo(anchorX, screen.getCursorY() + (8*textSize));
+}
+
 void setTextCursor(const char *params) {
   int x, y;
   if (sscanf(params, "%d,%d", &x, &y) == 2) {
@@ -104,6 +115,41 @@ void setTextCursor(uint16_t x, uint16_t y) {
   if (y<1 || y>256) return;
   screen.setCursor((x-1)*6*textSize, (y-1)*8*textSize);
 } 
+
+void moveTo(const char *params) {
+  int x, y;
+  if (sscanf(params, "%d,%d", &x, &y) == 2) {
+    moveTo(x,y);
+  }   
+} 
+
+void moveTo(uint16_t x, uint16_t y) {
+  if (x<0 || x>SCREEN_WIDTH) return;
+  if (y<0 || y>SCREEN_HEIGHT) return;
+  screen.setCursor(x, y);
+} 
+
+void move(const char *params) {
+  int x, y;
+  if (sscanf(params, "%d,%d", &x, &y) == 2) {
+    move(x,y);
+  }   
+} 
+
+void move(uint16_t dx, uint16_t dy) {
+  moveTo(screen.getCursorX() + dx, screen.getCursorY() + dy);
+}
+
+void relTo(const char *params) {
+  int x, y;
+  if (sscanf(params, "%d,%d", &x, &y) == 2) {
+    relTo(x,y);
+  }   
+} 
+
+void relTo(uint16_t dx, uint16_t dy) {
+  move(anchorX + dx, anchorY + dy);
+}
 
 uint16_t getTextCursorX() {
   return (screen.getCursorX() / (6*textSize)) + 1;
@@ -349,4 +395,11 @@ void drawScanline(const char *s) {
 
   // Terminamos la escritura
   screen.endWrite();
+}
+
+bool containsPoint(const Rect* r, uint16_t px, uint16_t py) {
+    return (px >= r->x) &&
+           (py >= r->y) &&
+           (px < (uint32_t)r->x + r->width) &&
+           (py < (uint32_t)r->y + r->height);
 }
