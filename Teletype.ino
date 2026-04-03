@@ -1,3 +1,5 @@
+#include "config.h"
+
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
 #else
@@ -21,7 +23,6 @@
   #define UDP_TX_PACKET_MAX_SIZE 8192
 #endif  
 
-#define MQTT_ENABLED
 #define MQTT_MAX_BUFFER_SIZE 4096
 
 unsigned long lastCheckMillis = 0;
@@ -38,8 +39,8 @@ int activeChannel = 0;
 WiFiUDP Udp;
 
 #ifdef MQTT_ENABLED
-WiFiClient wifiClient;
-PubSubClient mqttClient(wifiClient);
+  WiFiClient wifiClient;
+  PubSubClient mqttClient(wifiClient);
 #endif
 
 void setup() {
@@ -53,18 +54,21 @@ void setup() {
   setupButtons();  
   setupScreen(); 
 
-  setTextSize(4);
-  println("{ Teletype }");
-  Serial.println("\n\n=== Teletype ===\n");
-  
-  setTextSize(2);  
-  println("");  
-  
   WiFi.mode(WIFI_STA);
   WiFi.begin(STASSID, STAPSK);  
 
-  printF("MAC: %s\n", WiFi.macAddress().c_str());
+  Serial.println("\n\n=== Teletype ===\n");
   Serial.printf("MAC: %s\n", WiFi.macAddress().c_str()); 
+
+#ifdef TINY_SCREEN
+  setTextSize(1);  
+#else
+  setTextSize(4);
+  println("{ Teletype }");  
+  setTextSize(2);  
+  println("");  
+  printF("MAC: %s\n", WiFi.macAddress().c_str());
+#endif    
 
   int retries = 0;
   while (WiFi.status() != WL_CONNECTED && retries < 100) {
@@ -77,22 +81,25 @@ void setup() {
   erase(0, getCursorY(), SCREEN_WIDTH, getCursorY() + (8*2));
   setTextCursor(1, getTextCursorY());
 
-  if (WiFi.status() == WL_CONNECTED) {
-    printF("Red: %s\n", STASSID);
-    Serial.printf("Red: %s\n", STASSID);  
-    printF("IP: %s\n", WiFi.localIP().toString().c_str());  
+  if (WiFi.status() == WL_CONNECTED) {   
+    Serial.printf("Red: %s\n", STASSID); 
     Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());  
-    printF("Gateway: %s\n", WiFi.gatewayIP().toString().c_str()); 
-    Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());   
-    printF("DNS: %s\n", WiFi.dnsIP().toString().c_str()); 
-    Serial.printf("DNS: %s\n", WiFi.dnsIP().toString().c_str());   
-    int rssi = WiFi.RSSI();    
-    printF("RSSI: %s\n", formatSignalStrength(rssi).c_str());  
-    Serial.printf("RSSI: %d\n", rssi);   
-    
-    Udp.begin(PORT);    
+    Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());  
+    Serial.printf("DNS: %s\n", WiFi.dnsIP().toString().c_str());  
+    Udp.begin(PORT); 
     Serial.printf("Puerto: UDP/%d\n", PORT);   
+    int rssi = WiFi.RSSI();  
+    Serial.printf("RSSI: %d\n", rssi);   
+
+    printF("Red: %s\n", STASSID); 
+    printF("IP: %s\n", WiFi.localIP().toString().c_str()); 
+
+#ifndef TINY_SCREEN    
+    printF("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());  
+    printF("DNS: %s\n", WiFi.dnsIP().toString().c_str());  
+    printF("RSSI: %s\n", formatSignalStrength(rssi).c_str());     
     printF("Puerto: UDP/%d\n", PORT);  
+#endif    
   } else {    
     String macAddress = WiFi.softAPmacAddress();
     String lastTwoBytes = macAddress.substring(macAddress.length() - 5); 
@@ -104,20 +111,20 @@ void setup() {
     IPAddress subnet(255,255,255,0);
 
     WiFi.softAPConfig(local, gateway, subnet);
-    if (WiFi.softAP(ssid)) {      
-      printF("AP SSID: %s\n", ssid.c_str());
-      Serial.printf("AP SSID: %s\n", ssid.c_str());
-      printF("IP: %s\n", WiFi.softAPIP().toString().c_str());  
+    if (WiFi.softAP(ssid)) {  
+      Serial.printf("AP SSID: %s\n", ssid.c_str());  
       Serial.printf("IP: %s\n", WiFi.softAPIP().toString().c_str());   
+
+      printF("AP SSID: %s\n", ssid.c_str());
+      printF("IP: %s\n", WiFi.softAPIP().toString().c_str());  
             
       Udp.begin(PORT);      
       Serial.printf("Puerto: UDP/%d\n", PORT);   
-      printF("Puerto: UDP/%d\n", PORT);   
+#ifndef TINY_SCREEN        
+      printF("Puerto: UDP/%d\n", PORT); 
+#endif  
     };        
   }
-
-  Serial.printf("Display: %dX%d px\n", SCREEN_WIDTH, SCREEN_HEIGHT);   
-  printF("Display: %dX%d px\n", SCREEN_WIDTH, SCREEN_HEIGHT);  
 
 #ifdef MQTT_ENABLED
   Serial.println("Conectando con el servidor MQTT ...");
@@ -226,6 +233,7 @@ void parseBuffer(char buffer[]) {
       continue;
     }
 
+#ifdef SERIAL_DEBUG_ENABLED
     // Si es una linea con gran cantidad de datos no imprimimos todo, no tiene sentido
     if (strncmp(line, "scanline ", 9) == 0) {
       Serial.printf("Rcv (%s): scanline +%d bytes\n", Udp.remoteIP().toString().c_str(), strlen(line) - 9);  
@@ -233,7 +241,8 @@ void parseBuffer(char buffer[]) {
       Serial.printf("Rcv (%s): palette +%d bytes\n", Udp.remoteIP().toString().c_str(), strlen(line) - 8);  
     } else {
       Serial.printf("Rcv (%s): %s\n", Udp.remoteIP().toString().c_str(), line);  
-    }          
+    }  
+#endif            
 
     // Selecciona el canal al que van dirigidos los comandos de este paquete
     int i;
@@ -350,9 +359,11 @@ void checkWiFi() {
 #ifdef MQTT_ENABLED
 void mqttReceive(char* topic, byte* payload, unsigned int length) {
 
+#ifdef SERIAL_DEBUG_ENABLED
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.println("]");
+#endif  
 
   static char buffer[MQTT_MAX_BUFFER_SIZE + 1];  
 
@@ -384,24 +395,35 @@ void mqttReconnect() {
 void initTeletype() {   
   setBWColors();   
   clear(); 
+
+#ifdef TINY_SCREEN  
+  setTextSize(1);
+#else  
   setTextSize(4);
   println("{ Teletype }");  
   setTextSize(2);  
   println("");
   printF("MAC: %s\n", WiFi.macAddress().c_str());
+#endif  
 
   if (WiFi.status() == WL_CONNECTED) {
-    printF("Red: %s\n", STASSID);
+    printF("Red: %s\n", STASSID);    
     printF("IP: %s\n", WiFi.localIP().toString().c_str());   
+#ifndef TINY_SCREEN
     printF("Gateway: %s\n", WiFi.gatewayIP().toString().c_str()); 
     printF("DNS: %s\n", WiFi.dnsIP().toString().c_str()); 
     int rssi = WiFi.RSSI(); 
     printF("RSSI: %s\n", formatSignalStrength(rssi).c_str());  
-    printF("Puerto: UDP/%d\n", PORT);  
+    printF("Puerto: UDP/%d\n", PORT);      
+#endif  
+#ifdef MQTT_ENABLED 
+    if (mqttClient.connected()) {
+      printF("MQTT Topic: %s\n", MQTT_TOPIC);
+    }
+#endif    
   } else {    
     printF("Red: Sin Conexion");      
   }
-  printF("Display: %dX%d px\n", SCREEN_WIDTH, SCREEN_HEIGHT);  
 }
 
 void initLogger() {

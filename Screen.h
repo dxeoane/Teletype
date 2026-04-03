@@ -1,9 +1,6 @@
 #ifndef _SCREEN_H_
 #define _SCREEN_H_
 
-#define SCREEN_WIDTH  320
-#define SCREEN_HEIGHT 240
-
 #define COLOR_BLACK 0x0000
 #define COLOR_WHITE 0xFFFF
 #define COLOR_RED 0xF800

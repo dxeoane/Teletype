@@ -1,10 +1,10 @@
+#include "config.h"
+
 #include <Arduino.h>
 #include "Buttons.h"
 #include "Screen.h"
 
-#ifdef ESP8266
-    #define BLUE_BUTTON_PIN   D3
-    #define YELLOW_BUTTON_PIN D4
+#ifdef BUTTONS_ENABLED    
 
     void setupButtons(){
         // Configuramos los pines de los botones como entradas con PULLUP
@@ -12,16 +12,8 @@
         pinMode(YELLOW_BUTTON_PIN, INPUT_PULLUP); 
     }
 
-    // Lee el estado de los botones
-    uint8_t readButtons(void) {
-        static unsigned long previousMillisButton = 0;
-        unsigned long currentMillis = millis();
-
-        if (currentMillis - previousMillisButton < 200) {
-            return 0;
-        }
-        previousMillisButton = currentMillis;
-
+    // Segun el hardware los botones se leen de forma diferente
+    uint8_t doRead() {
         uint8_t buttons = 0;
         if (!digitalRead(BLUE_BUTTON_PIN)) {
             buttons |= BLUE_BUTTON;
@@ -29,36 +21,10 @@
         if (!digitalRead(YELLOW_BUTTON_PIN)) {
             buttons |= YELLOW_BUTTON;
         }
-
         return buttons;
     }
 
-
-    // Devuelve los botones que han cambiado su estado a presionado
-    uint8_t changedButtons(void) {
-        static uint8_t previousButtons = 0; 
-        static unsigned long previousMillisButton = 0;
-        unsigned long currentMillis = millis();    
-
-        if (currentMillis - previousMillisButton < 200) {
-            return 0; 
-        }
-        previousMillisButton = currentMillis; 
-        
-        uint8_t currentButtons = 0;
-        if (!digitalRead(BLUE_BUTTON_PIN)) {
-            currentButtons |= BLUE_BUTTON;
-        }
-        if (!digitalRead(YELLOW_BUTTON_PIN)) {
-            currentButtons |= YELLOW_BUTTON;
-        }
-        
-        uint8_t changedButtons = currentButtons & ~previousButtons; 
-        previousButtons = currentButtons;
-
-        return changedButtons;
-    }
-#else
+#elif defined(TOUCHSCREEN_ENABLED)
     #include <SPI.h>
     #include <XPT2046_Touchscreen.h>
 
@@ -77,24 +43,11 @@
         touchscreen.setRotation(1);
     }
 
-    uint8_t readButtons(void) {
-        return 0;    
-    }
-
-    // Devuelve los botones que han cambiado su estado a presionado
-    uint8_t changedButtons(void) {
+    // Segun el hardware los botones se leen de forma diferente
+    uint8_t doRead(void) {
         int x, y, z;
-        static uint8_t previousButtons = 0; 
-        static unsigned long previousMillisButton = 0;
-        unsigned long currentMillis = millis();    
 
-        if (currentMillis - previousMillisButton < 200) {
-            return 0; 
-        }
-        previousMillisButton = currentMillis; 
-        
-        uint8_t currentButtons = 0;
-
+        uint8_t buttons = 0;
         if (touchscreen.tirqTouched() && touchscreen.touched()) {
             TS_Point p = touchscreen.getPoint();
             x = map(p.x, 200, 3700, 1, SCREEN_WIDTH);
@@ -102,17 +55,59 @@
             z = p.z;
             if (z > 1000) {
                 if (x < SCREEN_WIDTH / 2) {
-                  currentButtons |= BLUE_BUTTON;  
+                  buttons |= BLUE_BUTTON;  
                 }
                 if (x > SCREEN_WIDTH / 2) {
-                  currentButtons |= YELLOW_BUTTON;  
+                  buttons |= YELLOW_BUTTON;  
                 }
             }
         }
-        
-        uint8_t changedButtons = currentButtons & ~previousButtons; 
-        previousButtons = currentButtons;
 
-        return changedButtons;
+        return buttons;
     }
+     
+#else   
+    void setupButtons(){
+
+    }
+
+    // Si no hay botons devolvemos siempre 0
+    uint8_t doRead() {
+        return 0;
+    } 
+    
 #endif
+
+
+// Lee el estado de los botones
+uint8_t readButtons(void) {
+    static unsigned long previousMillisButton = 0;
+    unsigned long currentMillis = millis();
+
+    if (currentMillis - previousMillisButton < 200) {
+        return 0;
+    }
+    previousMillisButton = currentMillis;
+
+    return doRead();
+}
+
+// Devuelve los botones que han cambiado su estado a presionado
+uint8_t changedButtons(void) {
+    static uint8_t previousButtons = 0; 
+    static unsigned long previousMillisButton = 0;
+    unsigned long currentMillis = millis();    
+
+    if (currentMillis - previousMillisButton < 200) {
+        return 0; 
+    }
+    previousMillisButton = currentMillis; 
+    
+    uint8_t currentButtons = doRead();        
+    uint8_t changedButtons = currentButtons & ~previousButtons; 
+    previousButtons = currentButtons;
+
+    return changedButtons;
+}
+
+

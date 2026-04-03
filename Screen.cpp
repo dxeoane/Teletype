@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <SPI.h>
@@ -20,7 +22,7 @@ TFT_eSPI screen = TFT_eSPI();
 
 void setupScreen() {
   screen.init();
-  screen.setRotation(1);  
+  screen.setRotation(SCREEN_ROTATION);  
   screen.fillScreen(bgColor);
   // x, y, Font
   screen.setCursor(0, 0, 1);
