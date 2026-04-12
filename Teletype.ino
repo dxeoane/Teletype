@@ -4,10 +4,17 @@
   #include <ESP8266WiFi.h>
 #else
   #include <WiFi.h>
+  #ifdef ESP32
+    #define UDP_TX_PACKET_MAX_SIZE 8192
+  #endif
 #endif  
 
 #include <WiFiUdp.h>
-#include <PubSubClient.h>
+
+#ifdef MQTT_ENABLED
+  #include <PubSubClient.h>
+  #define MQTT_MAX_BUFFER_SIZE 4096
+#endif  
 
 #include "Screen.h"
 #include "Buttons.h"
@@ -17,13 +24,7 @@
 #include "secret.h"
 
 #define PORT 8888
-#define CHANNELS 3
-
-#ifdef ESP32
-  #define UDP_TX_PACKET_MAX_SIZE 8192
-#endif  
-
-#define MQTT_MAX_BUFFER_SIZE 4096
+#define CHANNELS 3  
 
 unsigned long lastCheckMillis = 0;
 char ACK[] = "ACK\r\n";  
